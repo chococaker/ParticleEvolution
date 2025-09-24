@@ -47,7 +47,7 @@ void Particle::update(const Vector2& netAccelOnMe, float tStep) {
     vel.x = clamp(vel.x, -MAX_VELOCITY, MAX_VELOCITY);
     vel.y = clamp(vel.y, -MAX_VELOCITY, MAX_VELOCITY);
 
-    vel *= .9;
+    vel *= pow(.6, 60 * tStep); // Friction
 
     pos += tStep * vel;
     pos.x = clamp(pos.x, 0.f + PARTICLE_RAD, X_MAX - PARTICLE_RAD);
