@@ -21,7 +21,6 @@ static const float MAX_PRESSURE_ACCEL = 5000.0f;
 
 static const float MAX_ATTRACTION_ACCEL = 5000.0f;
 
-static const float MAX_VELOCITY = 5000.f;
 static const float MAX_ACCEL = 250000.f;
 
 static const float STACKED_PARTICLE_ACCEL = 10000.0f;
@@ -44,8 +43,6 @@ Particle::Particle(
 
 void Particle::update(const Vector2& netAccelOnMe, float tStep) {
     vel += tStep * netAccelOnMe;
-    vel.x = clamp(vel.x, -MAX_VELOCITY, MAX_VELOCITY);
-    vel.y = clamp(vel.y, -MAX_VELOCITY, MAX_VELOCITY);
 
     vel *= pow(.6, 60 * tStep); // Friction
 
@@ -72,7 +69,6 @@ Vector2 Particle::getNetAccelOnMe(const std::vector<Particle>& particles) const 
             netAccel += getRandomNormVector() * STACKED_PARTICLE_ACCEL;
         }
 
-        // stacked particles should just get sent in a random direction
         if (dist > DENSITY_EFFECT_DIST) {
             float attraction = attractionMatrix->getAttraction(color, other.color);
 
