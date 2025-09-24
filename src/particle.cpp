@@ -19,7 +19,7 @@ static const float MAX_PRESSURE_ACCEL = 5000.0f;
 static const float MAX_ATTRACTION_ACCEL = 6000.0f;
 
 static const float MAX_VELOCITY = 5000.f;
-static const float MAX_ACCEL = 5000.f;
+static const float MAX_ACCEL = 20000.f;
 
 static const float STACKED_PARTICLE_ACCEL = 10000.0f;
 
@@ -67,7 +67,7 @@ Vector2 Particle::getNetAccelOnMe(const std::vector<Particle>& particles) const 
         }
 
         Vector2 v = other.pos - pos;
-        if (v.magnitude() > PARTICLE_PROCESSING_DIST) continue; // skip far particles
+        if (v.magnitude_squared() > PARTICLE_PROCESSING_DIST * PARTICLE_PROCESSING_DIST) continue; // skip far particles
         Vector2 norm = Vector2(v);
         norm.normalize();
         float dist = v.magnitude();
