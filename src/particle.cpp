@@ -8,18 +8,21 @@
 namespace choco {
 
 
+void reverseWallVector(const Vector2& pos, Vector2& vec, float factor = 1);
+
+
 // Returns value 0-1 expressing proximity of colours (0 for same colour, 1 for white vs black)
 float colorProximity(const Color& c1, const Color& c2);
 
-static const float PARTICLE_PROCESSING_DIST = 100.f;
+static const float PARTICLE_PROCESSING_DIST = 120.f;
 
-static const float DENSITY_EFFECT_DIST = 35.0f;
+static const float DENSITY_EFFECT_DIST = 40.f; // 33.333
 static const float MAX_PRESSURE_ACCEL = 5000.0f;
 
-static const float MAX_ATTRACTION_ACCEL = 6000.0f;
+static const float MAX_ATTRACTION_ACCEL = 5000.0f;
 
 static const float MAX_VELOCITY = 5000.f;
-static const float MAX_ACCEL = 20000.f;
+static const float MAX_ACCEL = 250000.f;
 
 static const float STACKED_PARTICLE_ACCEL = 10000.0f;
 
@@ -44,7 +47,7 @@ void Particle::update(const Vector2& netAccelOnMe, float tStep) {
     vel.x = clamp(vel.x, -MAX_VELOCITY, MAX_VELOCITY);
     vel.y = clamp(vel.y, -MAX_VELOCITY, MAX_VELOCITY);
 
-    vel *= .98;
+    vel *= .9;
 
     pos += tStep * vel;
     pos.x = clamp(pos.x, 0.f + PARTICLE_RAD, X_MAX - PARTICLE_RAD);
@@ -52,47 +55,54 @@ void Particle::update(const Vector2& netAccelOnMe, float tStep) {
 
     static const float BOUNCE_FACTOR = 1;
 
-    if (pos.x <= 0 + PARTICLE_RAD && vel.x < 0) vel.x = BOUNCE_FACTOR * -vel.x;
-    if (pos.x >= X_MAX - PARTICLE_RAD && vel.x > 0) vel.x = BOUNCE_FACTOR * -vel.x;
-    if (pos.y <= 0 + PARTICLE_RAD && vel.y < 0) vel.y = BOUNCE_FACTOR * -vel.y;
-    if (pos.y >= Y_MAX - PARTICLE_RAD && vel.y > 0) vel.y = BOUNCE_FACTOR * -vel.y;
+    reverseWallVector(pos, vel, BOUNCE_FACTOR);
 }
 
 Vector2 Particle::getNetAccelOnMe(const std::vector<Particle>& particles) const {
     Vector2 netAccel = Vector2(0, 0);
     
     for (const Particle& other : particles) {
-        if (pos == other.pos) {
-            netAccel += getRandomNormVector() * STACKED_PARTICLE_ACCEL;
-        }
-
         Vector2 v = other.pos - pos;
         if (v.magnitude_squared() > PARTICLE_PROCESSING_DIST * PARTICLE_PROCESSING_DIST) continue; // skip far particles
         Vector2 norm = Vector2(v);
         norm.normalize();
         float dist = v.magnitude();
 
+        if (pos == other.pos) {
+            netAccel += getRandomNormVector() * STACKED_PARTICLE_ACCEL;
+        }
+
         // stacked particles should just get sent in a random direction
         if (dist > DENSITY_EFFECT_DIST) {
             float attraction = attractionMatrix->getAttraction(color, other.color);
-            float outDensityDist = dist - DENSITY_EFFECT_DIST;
-            float distanceFactor = (outDensityDist / NOPRESSURE_PROCESSING_DIST);
-            if (outDensityDist < NOPRESSURE_PROCESSING_DIST / 2) distanceFactor = 1 - distanceFactor;
 
-            netAccel += attraction * MAX_ATTRACTION_ACCEL * distanceFactor * norm;
+            float mid = (DENSITY_EFFECT_DIST + PARTICLE_PROCESSING_DIST) / 2;
+            float slope = attraction / (mid - DENSITY_EFFECT_DIST);
+            netAccel += (-(slope * std::abs(dist - mid)) + attraction) * MAX_ATTRACTION_ACCEL * norm;
         } else { // within density
-            netAccel += (1 - dist / DENSITY_EFFECT_DIST) * MAX_PRESSURE_ACCEL * -norm;
+            netAccel += ((MAX_PRESSURE_ACCEL / DENSITY_EFFECT_DIST) * dist - MAX_PRESSURE_ACCEL) * norm;
         }
     }
 
     float netAccelMag = netAccel.magnitude();
     netAccel.normalize();
 
-    return netAccel * clamp(netAccelMag, 0.f, MAX_ACCEL);
+    netAccel *= clamp(netAccelMag, 0.f, MAX_ACCEL);
+    reverseWallVector(pos, netAccel, 1);
+
+    return netAccel;
 }
 
 const Color& Particle::getColor() const { return color; }
 const Vector2& Particle::getPos() const { return pos; }
+
+
+void reverseWallVector(const Vector2& pos, Vector2& vec, float factor) {
+    if (pos.x <= 0 + PARTICLE_RAD && vec.x < 0) vec.x = factor * -vec.x;
+    if (pos.x >= X_MAX - PARTICLE_RAD && vec.x > 0) vec.x = factor * -vec.x;
+    if (pos.y <= 0 + PARTICLE_RAD && vec.y < 0) vec.y = factor * -vec.y;
+    if (pos.y >= Y_MAX - PARTICLE_RAD && vec.y > 0) vec.y = factor * -vec.y;
+}
 
 
 } // namespace choco

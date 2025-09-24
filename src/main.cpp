@@ -12,8 +12,8 @@ int getRandomInt(int min, int max) {
 int main() {
     std::vector<choco::Particle> particles;
 
-    int numParticles = 1000;
-    int particleTypeCount = 5;
+    int numParticles = 1500;
+    int particleTypeCount = 7;
 
     std::shared_ptr<choco::AttractionMatrix> attrMatrix = std::make_shared<choco::AttractionMatrix>();
     int currentParticleType = 0;
